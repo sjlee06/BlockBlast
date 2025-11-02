@@ -15,10 +15,6 @@
                     <span class="score-label">스코어</span>
                     <span id="current-score" class="score-value">0</span>
                 </div>
-                <div class="score-item">
-                    <span class="score-label">하이스코어</span>
-                    <span id="high-score" class="score-value">0</span>
-                </div>
             </div>
         </header>
 
@@ -36,26 +32,23 @@
 
         <div id="game-over-modal" class="modal hidden">
             <div class="modal-content">
-                <h2>게임 오버!</h2>
-                <p class="final-score-text">최종 스코어: <span id="final-score">0</span></p>
+                <h2>스코어: <span id="final-score">0</span></h2>
+
+                <div id="leaderboard" class="leaderboard">
+                    <div id="leaderboard-list" class="leaderboard-list">
+                        <p class="loading">로딩 중...</p>
+                    </div>
+                </div>
 
                 <div id="highscore-form" class="highscore-form hidden">
-                    <p class="congratulations">🎉 새로운 기록입니다!</p>
                     <input
                         type="text"
                         id="player-name"
                         maxlength="8"
-                        placeholder="이름 입력 (최대 8자)"
+                        placeholder="이름 입력 (영문/숫자)"
                         pattern="[A-Za-z0-9]+"
                     >
-                    <button id="submit-score-btn" class="submit-btn">등록하기</button>
-                </div>
-
-                <div id="leaderboard" class="leaderboard">
-                    <h3>🏆 리더보드</h3>
-                    <div id="leaderboard-list" class="leaderboard-list">
-                        <p class="loading">로딩 중...</p>
-                    </div>
+                    <button id="submit-score-btn" class="submit-btn">등록</button>
                 </div>
 
                 <button id="modal-restart-btn" class="restart-btn">다시 시작</button>
@@ -63,6 +56,6 @@
         </div>
     </div>
 
-    <script src="game.js?v=5"></script>
+    <script src="game.js?v=7"></script>
 </body>
 </html>

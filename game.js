@@ -35,14 +35,12 @@ const INITIAL_FILLED_ROWS = GAME_CONFIG.INITIAL_FILLED_ROWS;
 // 게임 상태
 let board = [];
 let score = 0;
-let highScore = 0;
 let turnCount = 0;
 let gameOver = false;
 
 // DOM 요소
 const gameBoard = document.getElementById('game-board');
 const currentScoreEl = document.getElementById('current-score');
-const highScoreEl = document.getElementById('high-score');
 const turnCountEl = document.getElementById('turn-count');
 const colorButtonsContainer = document.getElementById('color-buttons');
 const restartBtn = document.getElementById('restart-btn');
@@ -79,12 +77,6 @@ function initGame() {
     score = 0;
     turnCount = 0;
     gameOver = false;
-
-    // 하이스코어 로드
-    const savedHighScore = localStorage.getItem('blockBlastHighScore');
-    if (savedHighScore) {
-        highScore = parseInt(savedHighScore);
-    }
 
     // 상단 n줄에 랜덤 블록 채우기
     for (let row = 0; row < INITIAL_FILLED_ROWS; row++) {
@@ -126,7 +118,6 @@ function renderBoard() {
 // 화면 업데이트
 function updateDisplay() {
     currentScoreEl.textContent = score;
-    highScoreEl.textContent = highScore;
     turnCountEl.textContent = turnCount;
 }
 
@@ -179,25 +170,23 @@ function destroyBlocks(color) {
         const destroyedCount = blocksToDestroy.length;
         score += destroyedCount * GAME_CONFIG.POINTS_PER_BLOCK;
 
-        // 하이스코어 업데이트
-        if (score > highScore) {
-            highScore = score;
-            localStorage.setItem('blockBlastHighScore', highScore);
-        }
-
         // 턴 증가
         turnCount++;
 
         // n턴마다 새로운 블록 추가 (모든 블록을 아래로 한 칸씩 밀어냄)
         if (turnCount % GAME_CONFIG.TURNS_PER_NEW_ROW === 0) {
-            addNewRow();
+            const isGameOver = addNewRow();
+
+            // 게임 오버면 화면 업데이트 후 종료
+            if (isGameOver) {
+                updateDisplay();
+                renderBoard();
+                return;
+            }
         }
 
         updateDisplay();
         renderBoard();
-
-        // 게임 오버 체크
-        checkGameOver();
     }, 500);
 }
 
@@ -205,6 +194,15 @@ function destroyBlocks(color) {
 
 // 새로운 줄 추가
 function addNewRow() {
+    // 게임 오버 체크: 어느 한 열이라도 8개가 차있으면 게임 오버
+    for (let col = 0; col < COLS; col++) {
+        if (board[ROWS - 1][col] !== null) {
+            // 맨 아래 줄(8번째)에 블록이 있는 상태에서 새 줄을 추가하면 게임 오버
+            endGame();
+            return true; // 게임 오버 발생
+        }
+    }
+
     // 모든 블록을 한 칸 아래로 이동
     for (let row = ROWS - 1; row > 0; row--) {
         for (let col = 0; col < COLS; col++) {
@@ -216,20 +214,11 @@ function addNewRow() {
     for (let col = 0; col < COLS; col++) {
         board[0][col] = Math.floor(Math.random() * COLORS.length);
     }
+
+    return false; // 게임 계속
 }
 
-// 게임 오버 체크
-function checkGameOver() {
-    // 맨 아래 줄(7번째 행)이 모두 채워져 있는지 확인
-    for (let col = 0; col < COLS; col++) {
-        if (board[ROWS - 1][col] === null) {
-            return; // 하나라도 비어있으면 게임 계속
-        }
-    }
-
-    // 맨 아래 줄이 모두 채워진 상태면 게임 오버
-    endGame();
-}
+// 게임 오버 체크 함수 제거 (addNewRow에서 직접 체크)
 
 // 게임 종료
 function endGame() {

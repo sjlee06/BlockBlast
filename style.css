@@ -233,31 +233,24 @@ h1 {
 
 /* 하이스코어 입력 폼 */
 .highscore-form {
-    margin: 20px 0;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 10px;
+    margin: 15px 0;
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
 }
 
 .highscore-form.hidden {
     display: none;
 }
 
-.congratulations {
-    font-size: 1.2em;
-    color: #667eea;
-    font-weight: bold;
-    margin-bottom: 15px;
-}
-
 #player-name {
-    width: 100%;
-    max-width: 300px;
-    padding: 12px 20px;
-    font-size: 1.1em;
+    flex: 1;
+    max-width: 200px;
+    padding: 10px 15px;
+    font-size: 1em;
     border: 2px solid #667eea;
-    border-radius: 10px;
-    margin-bottom: 15px;
+    border-radius: 8px;
     text-align: center;
     text-transform: uppercase;
     font-family: 'Segoe UI', monospace;
@@ -270,15 +263,16 @@ h1 {
 }
 
 .submit-btn {
-    padding: 12px 30px;
+    padding: 10px 25px;
     background: #2ECC71;
     color: white;
     border: none;
-    border-radius: 10px;
-    font-size: 1.1em;
+    border-radius: 8px;
+    font-size: 1em;
     font-weight: bold;
     cursor: pointer;
     transition: all 0.3s ease;
+    white-space: nowrap;
 }
 
 .submit-btn:hover {
@@ -295,16 +289,7 @@ h1 {
 
 /* 리더보드 */
 .leaderboard {
-    margin: 25px 0;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 10px;
-}
-
-.leaderboard h3 {
-    color: #667eea;
-    margin-bottom: 15px;
-    font-size: 1.5em;
+    margin: 20px 0;
 }
 
 .leaderboard-list {
