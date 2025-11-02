@@ -3,21 +3,20 @@
 // ========================================
 const GAME_CONFIG = {
     // 보드 설정
-    ROWS: 8,
+    ROWS: 12,
     COLS: 4,
-    INITIAL_FILLED_ROWS: 2, // 게임 시작 시 채워진 행 수
+    INITIAL_FILLED_ROWS: 3, // 게임 시작 시 채워진 행 수
 
-    // 색상 설정 (4~6개 권장)
+    // 색상 설정 (3색)
     COLORS: [
         { hex: '#E74C3C', name: '빨강' },
         { hex: '#3498DB', name: '파랑' },
-        { hex: '#2ECC71', name: '초록' },
-        { hex: '#F39C12', name: '주황' }
+        { hex: '#2ECC71', name: '초록' }
     ],
 
     // 난이도 설정
     TURNS_PER_NEW_ROW: 1, // n턴마다 새로운 줄 추가 (1=매우 어려움, 2=어려움, 3=보통)
-    POINTS_PER_BLOCK: 100, // 블록 1개당 점수
+    POINTS_PER_BLOCK: 1, // 블록 1개당 점수
 
     // 구글 시트 API 설정
     // GOOGLE_SHEET_SETUP.md 가이드를 따라 URL을 설정하세요
