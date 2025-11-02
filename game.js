@@ -1,7 +1,8 @@
 // 게임 설정
 const ROWS = 8;
 const COLS = 8;
-const COLORS = ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#a8e6cf'];
+// 3매치 게임에서 자주 사용되는 눈에 편한 5가지 색상
+const COLORS = ['#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#9B59B6']; // 빨강, 파랑, 초록, 주황, 보라
 const INITIAL_FILLED_ROWS = 4;
 
 // 게임 상태
@@ -110,13 +111,11 @@ function destroyBlocks(color) {
         cell.classList.add('destroyed');
     });
 
-    // 애니메이션 후 블록 제거 및 중력 적용
+    // 애니메이션 후 블록 제거 (중력 없이)
     setTimeout(() => {
         blocksToDestroy.forEach(({ row, col }) => {
             board[row][col] = null;
         });
-
-        applyGravity();
 
         // 스코어 업데이트
         const destroyedCount = blocksToDestroy.length;
@@ -131,7 +130,7 @@ function destroyBlocks(color) {
         // 턴 증가
         turnCount++;
 
-        // 3턴마다 새로운 블록 추가
+        // 3턴마다 새로운 블록 추가 (모든 블록을 아래로 한 칸씩 밀어냄)
         if (turnCount % 3 === 0) {
             addNewRow();
         }
@@ -144,28 +143,7 @@ function destroyBlocks(color) {
     }, 500);
 }
 
-// 중력 적용 (블록을 아래로 떨어뜨림)
-function applyGravity() {
-    for (let col = 0; col < COLS; col++) {
-        // 각 열을 아래부터 채워나감
-        const column = [];
-        for (let row = ROWS - 1; row >= 0; row--) {
-            if (board[row][col] !== null) {
-                column.push(board[row][col]);
-            }
-        }
-
-        // 열 재배치
-        for (let row = ROWS - 1; row >= 0; row--) {
-            const index = ROWS - 1 - row;
-            if (index < column.length) {
-                board[row][col] = column[index];
-            } else {
-                board[row][col] = null;
-            }
-        }
-    }
-}
+// 중력 적용 함수 제거 (더 이상 사용하지 않음)
 
 // 새로운 줄 추가
 function addNewRow() {
