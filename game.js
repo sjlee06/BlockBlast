@@ -82,11 +82,16 @@ function findBottomBlocks(color) {
     const bottomBlocks = [];
 
     for (let col = 0; col < COLS; col++) {
-        // 각 열에서 아래부터 위로 탐색
+        // 각 열에서 아래부터 위로 탐색하여 첫 번째로 발견되는 블록 찾기
         for (let row = ROWS - 1; row >= 0; row--) {
-            if (board[row][col] === color) {
-                bottomBlocks.push({ row, col });
-                break; // 해당 열의 최하단 블록만 찾음
+            if (board[row][col] !== null) {
+                // 이 열의 최하단 블록을 찾음
+                if (board[row][col] === color) {
+                    // 색상이 일치하면 추가
+                    bottomBlocks.push({ row, col });
+                }
+                // 색상이 일치하지 않으면 이 열은 패스
+                break; // 각 열에서 최하단 블록만 확인
             }
         }
     }
