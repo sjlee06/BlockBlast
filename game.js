@@ -1,9 +1,31 @@
-// 게임 설정
-const ROWS = 8;
-const COLS = 8;
-// 3매치 게임에서 자주 사용되는 눈에 편한 5가지 색상
-const COLORS = ['#E74C3C', '#3498DB', '#2ECC71', '#F39C12', '#9B59B6']; // 빨강, 파랑, 초록, 주황, 보라
-const INITIAL_FILLED_ROWS = 4;
+// ========================================
+// 게임 밸런스 설정 (여기서 난이도 조정 가능)
+// ========================================
+const GAME_CONFIG = {
+    // 보드 설정
+    ROWS: 8,
+    COLS: 8,
+    INITIAL_FILLED_ROWS: 4, // 게임 시작 시 채워진 행 수
+
+    // 색상 설정 (4~6개 권장)
+    COLORS: [
+        { hex: '#E74C3C', name: '빨강' },
+        { hex: '#3498DB', name: '파랑' },
+        { hex: '#2ECC71', name: '초록' },
+        { hex: '#F39C12', name: '주황' }
+    ],
+
+    // 난이도 설정
+    TURNS_PER_NEW_ROW: 1, // n턴마다 새로운 줄 추가 (1=매우 어려움, 2=어려움, 3=보통)
+    POINTS_PER_BLOCK: 100, // 블록 1개당 점수
+};
+
+// 게임 설정 (GAME_CONFIG에서 자동 추출)
+const ROWS = GAME_CONFIG.ROWS;
+const COLS = GAME_CONFIG.COLS;
+const COLORS = GAME_CONFIG.COLORS.map(c => c.hex);
+const COLOR_NAMES = GAME_CONFIG.COLORS.map(c => c.name);
+const INITIAL_FILLED_ROWS = GAME_CONFIG.INITIAL_FILLED_ROWS;
 
 // 게임 상태
 let board = [];
@@ -17,11 +39,30 @@ const gameBoard = document.getElementById('game-board');
 const currentScoreEl = document.getElementById('current-score');
 const highScoreEl = document.getElementById('high-score');
 const turnCountEl = document.getElementById('turn-count');
-const colorButtons = document.querySelectorAll('.color-btn');
+const colorButtonsContainer = document.getElementById('color-buttons');
 const restartBtn = document.getElementById('restart-btn');
 const modalRestartBtn = document.getElementById('modal-restart-btn');
 const gameOverModal = document.getElementById('game-over-modal');
 const finalScoreEl = document.getElementById('final-score');
+
+// 색상 버튼 동적 생성
+function createColorButtons() {
+    colorButtonsContainer.innerHTML = '';
+
+    GAME_CONFIG.COLORS.forEach((color, index) => {
+        const button = document.createElement('button');
+        button.className = 'color-btn';
+        button.dataset.color = index;
+        button.style.backgroundColor = color.hex;
+        button.textContent = color.name;
+
+        button.addEventListener('click', () => {
+            destroyBlocks(index);
+        });
+
+        colorButtonsContainer.appendChild(button);
+    });
+}
 
 // 게임 초기화
 function initGame() {
@@ -36,12 +77,15 @@ function initGame() {
         highScore = parseInt(savedHighScore);
     }
 
-    // 상단 4줄에 랜덤 블록 채우기
+    // 상단 n줄에 랜덤 블록 채우기
     for (let row = 0; row < INITIAL_FILLED_ROWS; row++) {
         for (let col = 0; col < COLS; col++) {
             board[row][col] = Math.floor(Math.random() * COLORS.length);
         }
     }
+
+    // 색상 버튼 생성 (게임 설정에 따라)
+    createColorButtons();
 
     updateDisplay();
     renderBoard();
@@ -124,7 +168,7 @@ function destroyBlocks(color) {
 
         // 스코어 업데이트
         const destroyedCount = blocksToDestroy.length;
-        score += destroyedCount * 100;
+        score += destroyedCount * GAME_CONFIG.POINTS_PER_BLOCK;
 
         // 하이스코어 업데이트
         if (score > highScore) {
@@ -135,8 +179,8 @@ function destroyBlocks(color) {
         // 턴 증가
         turnCount++;
 
-        // 3턴마다 새로운 블록 추가 (모든 블록을 아래로 한 칸씩 밀어냄)
-        if (turnCount % 3 === 0) {
+        // n턴마다 새로운 블록 추가 (모든 블록을 아래로 한 칸씩 밀어냄)
+        if (turnCount % GAME_CONFIG.TURNS_PER_NEW_ROW === 0) {
             addNewRow();
         }
 
@@ -174,10 +218,8 @@ function checkGameOver() {
         }
     }
 
-    // 맨 아래 줄이 모두 채워진 상태에서 턴이 3의 배수가 되면 게임 오버
-    if (turnCount % 3 === 0) {
-        endGame();
-    }
+    // 맨 아래 줄이 모두 채워진 상태면 게임 오버
+    endGame();
 }
 
 // 게임 종료
@@ -190,25 +232,19 @@ function endGame() {
 
 // 버튼 활성화
 function enableButtons() {
-    colorButtons.forEach(btn => {
+    const buttons = colorButtonsContainer.querySelectorAll('.color-btn');
+    buttons.forEach(btn => {
         btn.disabled = false;
     });
 }
 
 // 버튼 비활성화
 function disableButtons() {
-    colorButtons.forEach(btn => {
+    const buttons = colorButtonsContainer.querySelectorAll('.color-btn');
+    buttons.forEach(btn => {
         btn.disabled = true;
     });
 }
-
-// 이벤트 리스너
-colorButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-        const color = parseInt(btn.dataset.color);
-        destroyBlocks(color);
-    });
-});
 
 restartBtn.addEventListener('click', initGame);
 modalRestartBtn.addEventListener('click', initGame);
