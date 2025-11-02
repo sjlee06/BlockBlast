@@ -52,23 +52,12 @@ const playerNameInput = document.getElementById('player-name');
 const submitScoreBtn = document.getElementById('submit-score-btn');
 const leaderboardList = document.getElementById('leaderboard-list');
 
-// 색상 버튼 동적 생성
+// 색상 버튼 동적 생성 (더 이상 사용하지 않음)
 function createColorButtons() {
-    colorButtonsContainer.innerHTML = '';
-
-    GAME_CONFIG.COLORS.forEach((color, index) => {
-        const button = document.createElement('button');
-        button.className = 'color-btn';
-        button.dataset.color = index;
-        button.style.backgroundColor = color.hex;
-        button.textContent = color.name;
-
-        button.addEventListener('click', () => {
-            destroyBlocks(index);
-        });
-
-        colorButtonsContainer.appendChild(button);
-    });
+    // 색상 버튼은 더 이상 사용하지 않습니다
+    if (colorButtonsContainer) {
+        colorButtonsContainer.style.display = 'none';
+    }
 }
 
 // 게임 초기화
@@ -78,8 +67,8 @@ function initGame() {
     turnCount = 0;
     gameOver = false;
 
-    // 상단 n줄에 랜덤 블록 채우기
-    for (let row = 0; row < INITIAL_FILLED_ROWS; row++) {
+    // 하단 n줄에 랜덤 블록 채우기
+    for (let row = ROWS - INITIAL_FILLED_ROWS; row < ROWS; row++) {
         for (let col = 0; col < COLS; col++) {
             board[row][col] = Math.floor(Math.random() * COLORS.length);
         }
@@ -90,7 +79,6 @@ function initGame() {
 
     updateDisplay();
     renderBoard();
-    enableButtons();
     gameOverModal.classList.add('hidden');
 }
 
@@ -110,6 +98,9 @@ function renderBoard() {
                 cell.style.backgroundColor = COLORS[board[row][col]];
             }
 
+            // 블록 클릭 이벤트 추가
+            cell.addEventListener('click', () => handleCellClick(row, col));
+
             gameBoard.appendChild(cell);
         }
     }
@@ -121,36 +112,50 @@ function updateDisplay() {
     turnCountEl.textContent = turnCount;
 }
 
-// 특정 색상의 최하단 블록 찾기
-function findBottomBlocks(color) {
-    const bottomBlocks = [];
+// DFS로 인접한 같은 색상 블록 찾기
+function findConnectedBlocks(startRow, startCol) {
+    const color = board[startRow][startCol];
+    if (color === null) return [];
 
-    for (let col = 0; col < COLS; col++) {
-        // 각 열에서 아래부터 위로 탐색하여 첫 번째로 발견되는 블록 찾기
-        for (let row = ROWS - 1; row >= 0; row--) {
-            if (board[row][col] !== null) {
-                // 이 열의 최하단 블록을 찾음
-                if (board[row][col] === color) {
-                    // 색상이 일치하면 추가
-                    bottomBlocks.push({ row, col });
-                }
-                // 색상이 일치하지 않으면 이 열은 패스
-                break; // 각 열에서 최하단 블록만 확인
-            }
-        }
+    const visited = Array(ROWS).fill(null).map(() => Array(COLS).fill(false));
+    const connectedBlocks = [];
+
+    // DFS 탐색
+    function dfs(row, col) {
+        // 범위 체크
+        if (row < 0 || row >= ROWS || col < 0 || col >= COLS) return;
+        // 방문 체크
+        if (visited[row][col]) return;
+        // 블록 존재 및 색상 일치 체크
+        if (board[row][col] !== color) return;
+
+        visited[row][col] = true;
+        connectedBlocks.push({ row, col });
+
+        // 4방향 탐색 (상, 하, 좌, 우)
+        dfs(row - 1, col); // 위
+        dfs(row + 1, col); // 아래
+        dfs(row, col - 1); // 왼쪽
+        dfs(row, col + 1); // 오른쪽
     }
 
-    return bottomBlocks;
+    dfs(startRow, startCol);
+    return connectedBlocks;
 }
 
-// 블록 파괴
-function destroyBlocks(color) {
+// 셀 클릭 핸들러
+function handleCellClick(row, col) {
     if (gameOver) return;
 
-    const blocksToDestroy = findBottomBlocks(color);
+    // 빈 칸 클릭 시 무시
+    if (board[row][col] === null) return;
 
-    if (blocksToDestroy.length === 0) {
-        return; // 파괴할 블록이 없으면 턴을 소비하지 않음
+    // 인접한 같은 색상 블록 찾기
+    const blocksToDestroy = findConnectedBlocks(row, col);
+
+    // 인접한 블록이 없으면 (혼자 있는 블록) 아무 동작도 하지 않음
+    if (blocksToDestroy.length <= 1) {
+        return;
     }
 
     // 블록 파괴 애니메이션
@@ -160,11 +165,15 @@ function destroyBlocks(color) {
         cell.classList.add('destroyed');
     });
 
-    // 애니메이션 후 블록 제거 (중력 없이)
+    // 애니메이션 후 블록 제거 및 중력 적용
     setTimeout(() => {
+        // 블록 제거
         blocksToDestroy.forEach(({ row, col }) => {
             board[row][col] = null;
         });
+
+        // 중력 적용
+        applyGravity();
 
         // 스코어 업데이트
         const destroyedCount = blocksToDestroy.length;
@@ -173,7 +182,7 @@ function destroyBlocks(color) {
         // 턴 증가
         turnCount++;
 
-        // n턴마다 새로운 블록 추가 (모든 블록을 아래로 한 칸씩 밀어냄)
+        // n턴마다 새로운 블록 추가
         if (turnCount % GAME_CONFIG.TURNS_PER_NEW_ROW === 0) {
             const isGameOver = addNewRow();
 
@@ -190,29 +199,52 @@ function destroyBlocks(color) {
     }, 500);
 }
 
+// 중력 적용 (각 열에서 빈 칸을 위로 올림)
+function applyGravity() {
+    for (let col = 0; col < COLS; col++) {
+        // 각 열의 블록들을 아래부터 모으기
+        const blocks = [];
+        for (let row = ROWS - 1; row >= 0; row--) {
+            if (board[row][col] !== null) {
+                blocks.push(board[row][col]);
+            }
+        }
+
+        // 열을 다시 채우기 (아래부터)
+        for (let row = ROWS - 1; row >= 0; row--) {
+            const blockIndex = ROWS - 1 - row;
+            if (blockIndex < blocks.length) {
+                board[row][col] = blocks[blockIndex];
+            } else {
+                board[row][col] = null;
+            }
+        }
+    }
+}
+
 // 중력 적용 함수 제거 (더 이상 사용하지 않음)
 
-// 새로운 줄 추가
+// 새로운 줄 추가 (아래에서 위로 밀어올림)
 function addNewRow() {
-    // 게임 오버 체크: 어느 한 열이라도 8개가 차있으면 게임 오버
+    // 게임 오버 체크: 어느 한 열이라도 맨 위 줄에 블록이 있으면 게임 오버
     for (let col = 0; col < COLS; col++) {
-        if (board[ROWS - 1][col] !== null) {
-            // 맨 아래 줄(8번째)에 블록이 있는 상태에서 새 줄을 추가하면 게임 오버
+        if (board[0][col] !== null) {
+            // 맨 위 줄(1번째)에 블록이 있는 상태에서 새 줄을 추가하면 게임 오버
             endGame();
             return true; // 게임 오버 발생
         }
     }
 
-    // 모든 블록을 한 칸 아래로 이동
-    for (let row = ROWS - 1; row > 0; row--) {
+    // 모든 블록을 한 칸 위로 이동
+    for (let row = 0; row < ROWS - 1; row++) {
         for (let col = 0; col < COLS; col++) {
-            board[row][col] = board[row - 1][col];
+            board[row][col] = board[row + 1][col];
         }
     }
 
-    // 맨 위 줄에 새로운 랜덤 블록 추가
+    // 맨 아래 줄에 새로운 랜덤 블록 추가
     for (let col = 0; col < COLS; col++) {
-        board[0][col] = Math.floor(Math.random() * COLORS.length);
+        board[ROWS - 1][col] = Math.floor(Math.random() * COLORS.length);
     }
 
     return false; // 게임 계속
@@ -225,7 +257,6 @@ function endGame() {
     gameOver = true;
     finalScoreEl.textContent = score;
     gameOverModal.classList.remove('hidden');
-    disableButtons();
 
     // 닉네임 입력창과 리더보드 로딩을 병렬로 처리
     if (GAME_CONFIG.GOOGLE_SHEET_API_URL) {
@@ -236,22 +267,6 @@ function endGame() {
     } else {
         leaderboardList.innerHTML = '<p class="error-message">구글 시트 API가 설정되지 않았습니다.<br>GOOGLE_SHEET_SETUP.md를 참고하세요.</p>';
     }
-}
-
-// 버튼 활성화
-function enableButtons() {
-    const buttons = colorButtonsContainer.querySelectorAll('.color-btn');
-    buttons.forEach(btn => {
-        btn.disabled = false;
-    });
-}
-
-// 버튼 비활성화
-function disableButtons() {
-    const buttons = colorButtonsContainer.querySelectorAll('.color-btn');
-    buttons.forEach(btn => {
-        btn.disabled = true;
-    });
 }
 
 // ========================================
