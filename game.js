@@ -18,6 +18,11 @@ const GAME_CONFIG = {
     // 난이도 설정
     TURNS_PER_NEW_ROW: 1, // n턴마다 새로운 줄 추가 (1=매우 어려움, 2=어려움, 3=보통)
     POINTS_PER_BLOCK: 100, // 블록 1개당 점수
+
+    // 구글 시트 API 설정
+    // GOOGLE_SHEET_SETUP.md 가이드를 따라 URL을 설정하세요
+    GOOGLE_SHEET_API_URL: 'https://script.google.com/macros/s/AKfycbzGQ6TgwYGoI_JYjlyuPfDunsG_wpDtcYdlqQ30sYjy-qrjP6YcdZjJDScsqZW_5GdN/exec', // 예: 'https://script.google.com/macros/s/YOUR_ID/exec'
+    LEADERBOARD_LIMIT: 10, // 표시할 최대 리더보드 항목 수
 };
 
 // 게임 설정 (GAME_CONFIG에서 자동 추출)
@@ -44,6 +49,10 @@ const restartBtn = document.getElementById('restart-btn');
 const modalRestartBtn = document.getElementById('modal-restart-btn');
 const gameOverModal = document.getElementById('game-over-modal');
 const finalScoreEl = document.getElementById('final-score');
+const highscoreForm = document.getElementById('highscore-form');
+const playerNameInput = document.getElementById('player-name');
+const submitScoreBtn = document.getElementById('submit-score-btn');
+const leaderboardList = document.getElementById('leaderboard-list');
 
 // 색상 버튼 동적 생성
 function createColorButtons() {
@@ -228,6 +237,14 @@ function endGame() {
     finalScoreEl.textContent = score;
     gameOverModal.classList.remove('hidden');
     disableButtons();
+
+    // 리더보드 로드
+    loadLeaderboard();
+
+    // 하이스코어 체크 및 입력 폼 표시 (구글 시트 API가 설정된 경우만)
+    if (GAME_CONFIG.GOOGLE_SHEET_API_URL) {
+        checkHighScore();
+    }
 }
 
 // 버튼 활성화
@@ -245,6 +262,156 @@ function disableButtons() {
         btn.disabled = true;
     });
 }
+
+// ========================================
+// 구글 시트 리더보드 기능
+// ========================================
+
+// 리더보드 로드
+async function loadLeaderboard() {
+    if (!GAME_CONFIG.GOOGLE_SHEET_API_URL) {
+        leaderboardList.innerHTML = '<p class="error-message">구글 시트 API가 설정되지 않았습니다.<br>GOOGLE_SHEET_SETUP.md를 참고하세요.</p>';
+        return;
+    }
+
+    leaderboardList.innerHTML = '<p class="loading">로딩 중...</p>';
+
+    try {
+        const response = await fetch(`${GAME_CONFIG.GOOGLE_SHEET_API_URL}?limit=${GAME_CONFIG.LEADERBOARD_LIMIT}`);
+        const data = await response.json();
+
+        if (data.scores && data.scores.length > 0) {
+            renderLeaderboard(data.scores);
+        } else {
+            leaderboardList.innerHTML = '<p class="loading">아직 기록이 없습니다.</p>';
+        }
+    } catch (error) {
+        console.error('리더보드 로드 실패:', error);
+        leaderboardList.innerHTML = '<p class="error-message">리더보드를 불러올 수 없습니다.</p>';
+    }
+}
+
+// 리더보드 렌더링
+function renderLeaderboard(scores) {
+    leaderboardList.innerHTML = '';
+
+    scores.forEach((entry, index) => {
+        const item = document.createElement('div');
+        item.className = 'leaderboard-item';
+
+        // 1~3위 특별 스타일
+        if (index === 0) item.classList.add('top-1');
+        else if (index === 1) item.classList.add('top-2');
+        else if (index === 2) item.classList.add('top-3');
+
+        const rank = document.createElement('span');
+        rank.className = 'rank';
+        rank.textContent = `#${index + 1}`;
+
+        const name = document.createElement('span');
+        name.className = 'player-name';
+        name.textContent = entry.name;
+
+        const scoreSpan = document.createElement('span');
+        scoreSpan.className = 'player-score';
+        scoreSpan.textContent = entry.score.toLocaleString();
+
+        item.appendChild(rank);
+        item.appendChild(name);
+        item.appendChild(scoreSpan);
+
+        leaderboardList.appendChild(item);
+    });
+}
+
+// 하이스코어 체크 (10위 안에 들었는지)
+async function checkHighScore() {
+    if (!GAME_CONFIG.GOOGLE_SHEET_API_URL) return;
+
+    try {
+        const response = await fetch(`${GAME_CONFIG.GOOGLE_SHEET_API_URL}?limit=${GAME_CONFIG.LEADERBOARD_LIMIT}`);
+        const data = await response.json();
+
+        // 리더보드가 비어있거나, 10개 미만이거나, 현재 점수가 10위보다 높으면 폼 표시
+        if (!data.scores || data.scores.length < GAME_CONFIG.LEADERBOARD_LIMIT ||
+            score > data.scores[data.scores.length - 1].score) {
+            highscoreForm.classList.remove('hidden');
+        }
+    } catch (error) {
+        console.error('하이스코어 체크 실패:', error);
+        // 에러 시에도 폼 표시
+        highscoreForm.classList.remove('hidden');
+    }
+}
+
+// 점수 제출
+async function submitScore() {
+    const playerName = playerNameInput.value.trim().toUpperCase();
+
+    // 유효성 검사
+    if (!playerName) {
+        alert('이름을 입력해주세요!');
+        return;
+    }
+
+    if (!/^[A-Z0-9]+$/.test(playerName)) {
+        alert('영어와 숫자만 입력 가능합니다!');
+        return;
+    }
+
+    if (playerName.length > 8) {
+        alert('이름은 최대 8자까지 입력 가능합니다!');
+        return;
+    }
+
+    // 버튼 비활성화
+    submitScoreBtn.disabled = true;
+    submitScoreBtn.textContent = '등록 중...';
+
+    try {
+        const response = await fetch(GAME_CONFIG.GOOGLE_SHEET_API_URL, {
+            method: 'POST',
+            mode: 'no-cors', // CORS 우회
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                name: playerName,
+                score: score
+            })
+        });
+
+        // no-cors 모드에서는 응답을 읽을 수 없으므로 성공으로 간주
+        alert('🎉 점수가 등록되었습니다!');
+        highscoreForm.classList.add('hidden');
+
+        // 리더보드 새로고침 (약간의 지연 후)
+        setTimeout(() => {
+            loadLeaderboard();
+        }, 1000);
+
+    } catch (error) {
+        console.error('점수 제출 실패:', error);
+        alert('점수 등록에 실패했습니다. 다시 시도해주세요.');
+        submitScoreBtn.disabled = false;
+        submitScoreBtn.textContent = '등록하기';
+    }
+}
+
+// 이름 입력 필드 영어/숫자만 허용
+playerNameInput.addEventListener('input', (e) => {
+    e.target.value = e.target.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+});
+
+// 엔터키로 제출
+playerNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+        submitScore();
+    }
+});
+
+// 제출 버튼 이벤트
+submitScoreBtn.addEventListener('click', submitScore);
 
 restartBtn.addEventListener('click', initGame);
 modalRestartBtn.addEventListener('click', initGame);

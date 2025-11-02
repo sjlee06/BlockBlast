@@ -198,6 +198,9 @@ h1 {
     text-align: center;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     animation: modalSlideIn 0.3s ease-out;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 @keyframes modalSlideIn {
@@ -226,6 +229,151 @@ h1 {
 #final-score {
     color: #764ba2;
     font-weight: bold;
+}
+
+/* 하이스코어 입력 폼 */
+.highscore-form {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.highscore-form.hidden {
+    display: none;
+}
+
+.congratulations {
+    font-size: 1.2em;
+    color: #667eea;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+#player-name {
+    width: 100%;
+    max-width: 300px;
+    padding: 12px 20px;
+    font-size: 1.1em;
+    border: 2px solid #667eea;
+    border-radius: 10px;
+    margin-bottom: 15px;
+    text-align: center;
+    text-transform: uppercase;
+    font-family: 'Segoe UI', monospace;
+}
+
+#player-name:focus {
+    outline: none;
+    border-color: #764ba2;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.submit-btn {
+    padding: 12px 30px;
+    background: #2ECC71;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.submit-btn:hover {
+    background: #27ae60;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.submit-btn:disabled {
+    background: #95a5a6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* 리더보드 */
+.leaderboard {
+    margin: 25px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.leaderboard h3 {
+    color: #667eea;
+    margin-bottom: 15px;
+    font-size: 1.5em;
+}
+
+.leaderboard-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.leaderboard-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    background: white;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.leaderboard-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.leaderboard-item.top-1 {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    color: white;
+    font-weight: bold;
+}
+
+.leaderboard-item.top-2 {
+    background: linear-gradient(135deg, #C0C0C0 0%, #A8A8A8 100%);
+    color: white;
+}
+
+.leaderboard-item.top-3 {
+    background: linear-gradient(135deg, #CD7F32 0%, #B8860B 100%);
+    color: white;
+}
+
+.rank {
+    font-weight: bold;
+    font-size: 1.2em;
+    min-width: 40px;
+}
+
+.player-name {
+    flex: 1;
+    text-align: left;
+    font-weight: bold;
+    font-family: monospace;
+    font-size: 1.1em;
+}
+
+.player-score {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.loading {
+    color: #95a5a6;
+    font-style: italic;
+}
+
+.error-message {
+    color: #e74c3c;
+    padding: 10px;
+    background: #fadbd8;
+    border-radius: 5px;
+    margin: 10px 0;
 }
 
 @media (max-width: 600px) {
