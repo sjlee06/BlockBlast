@@ -61,29 +61,30 @@ h1 {
 
 .game-board {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     grid-template-rows: repeat(8, 1fr);
-    gap: 4px;
-    background: #e0e0e0;
-    padding: 4px;
+    gap: 8px;
+    padding: 10px;
     border-radius: 10px;
     margin-bottom: 30px;
-    aspect-ratio: 1;
-    max-width: 500px;
+    width: 300px;
+    height: 600px;
     margin-left: auto;
     margin-right: auto;
 }
 
 .cell {
-    background: white;
+    background: #f0f0f0;
     border-radius: 6px;
     transition: all 0.3s ease;
     cursor: pointer;
     position: relative;
+    border: 2px solid #ddd;
 }
 
 .cell.filled {
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+    border: none;
 }
 
 .cell:hover {

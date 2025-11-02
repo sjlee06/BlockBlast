@@ -4,8 +4,8 @@
 const GAME_CONFIG = {
     // 보드 설정
     ROWS: 8,
-    COLS: 8,
-    INITIAL_FILLED_ROWS: 4, // 게임 시작 시 채워진 행 수
+    COLS: 4,
+    INITIAL_FILLED_ROWS: 2, // 게임 시작 시 채워진 행 수
 
     // 색상 설정 (4~6개 권장)
     COLORS: [
@@ -153,8 +153,8 @@ function handleCellClick(row, col) {
     // 인접한 같은 색상 블록 찾기
     const blocksToDestroy = findConnectedBlocks(row, col);
 
-    // 인접한 블록이 없으면 (혼자 있는 블록) 아무 동작도 하지 않음
-    if (blocksToDestroy.length <= 1) {
+    // 블록이 없으면 리턴 (안전성 체크)
+    if (blocksToDestroy.length === 0) {
         return;
     }
 
