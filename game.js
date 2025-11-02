@@ -227,12 +227,14 @@ function endGame() {
     gameOverModal.classList.remove('hidden');
     disableButtons();
 
-    // 리더보드 로드
-    loadLeaderboard();
-
-    // 하이스코어 체크 및 입력 폼 표시 (구글 시트 API가 설정된 경우만)
+    // 닉네임 입력창과 리더보드 로딩을 병렬로 처리
     if (GAME_CONFIG.GOOGLE_SHEET_API_URL) {
+        // 하이스코어 체크 (즉시 실행, 리더보드 로딩과 무관)
         checkHighScore();
+        // 리더보드 로드 (백그라운드에서 실행)
+        loadLeaderboard();
+    } else {
+        leaderboardList.innerHTML = '<p class="error-message">구글 시트 API가 설정되지 않았습니다.<br>GOOGLE_SHEET_SETUP.md를 참고하세요.</p>';
     }
 }
 
@@ -256,6 +258,21 @@ function disableButtons() {
 // 구글 시트 리더보드 기능
 // ========================================
 
+// 리더보드 캐시 (5초 동안 유효)
+let leaderboardCache = null;
+let leaderboardCacheTime = 0;
+const CACHE_DURATION = 5000; // 5초
+
+// 타임아웃 래퍼 함수
+function fetchWithTimeout(url, timeout = 3000) {
+    return Promise.race([
+        fetch(url),
+        new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('요청 시간 초과')), timeout)
+        )
+    ]);
+}
+
 // 리더보드 로드
 async function loadLeaderboard() {
     if (!GAME_CONFIG.GOOGLE_SHEET_API_URL) {
@@ -265,9 +282,27 @@ async function loadLeaderboard() {
 
     leaderboardList.innerHTML = '<p class="loading">로딩 중...</p>';
 
+    // 캐시 확인 (5초 이내)
+    const now = Date.now();
+    if (leaderboardCache && (now - leaderboardCacheTime) < CACHE_DURATION) {
+        if (leaderboardCache.scores && leaderboardCache.scores.length > 0) {
+            renderLeaderboard(leaderboardCache.scores);
+        } else {
+            leaderboardList.innerHTML = '<p class="loading">아직 기록이 없습니다.</p>';
+        }
+        return;
+    }
+
     try {
-        const response = await fetch(`${GAME_CONFIG.GOOGLE_SHEET_API_URL}?limit=${GAME_CONFIG.LEADERBOARD_LIMIT}`);
+        const response = await fetchWithTimeout(
+            `${GAME_CONFIG.GOOGLE_SHEET_API_URL}?limit=${GAME_CONFIG.LEADERBOARD_LIMIT}`,
+            10000 // 10초 타임아웃
+        );
         const data = await response.json();
+
+        // 캐시 저장
+        leaderboardCache = data;
+        leaderboardCacheTime = now;
 
         if (data.scores && data.scores.length > 0) {
             renderLeaderboard(data.scores);
@@ -276,7 +311,7 @@ async function loadLeaderboard() {
         }
     } catch (error) {
         console.error('리더보드 로드 실패:', error);
-        leaderboardList.innerHTML = '<p class="error-message">리더보드를 불러올 수 없습니다.</p>';
+        leaderboardList.innerHTML = '<p class="error-message">리더보드를 불러올 수 없습니다.<br><small>연결이 느리거나 서버가 응답하지 않습니다.</small></p>';
     }
 }
 
@@ -317,9 +352,27 @@ function renderLeaderboard(scores) {
 async function checkHighScore() {
     if (!GAME_CONFIG.GOOGLE_SHEET_API_URL) return;
 
+    // 캐시된 데이터가 있으면 바로 사용
+    const now = Date.now();
+    if (leaderboardCache && (now - leaderboardCacheTime) < CACHE_DURATION) {
+        const data = leaderboardCache;
+        if (!data.scores || data.scores.length < GAME_CONFIG.LEADERBOARD_LIMIT ||
+            score > data.scores[data.scores.length - 1].score) {
+            highscoreForm.classList.remove('hidden');
+        }
+        return;
+    }
+
     try {
-        const response = await fetch(`${GAME_CONFIG.GOOGLE_SHEET_API_URL}?limit=${GAME_CONFIG.LEADERBOARD_LIMIT}`);
+        const response = await fetchWithTimeout(
+            `${GAME_CONFIG.GOOGLE_SHEET_API_URL}?limit=${GAME_CONFIG.LEADERBOARD_LIMIT}`,
+            10000 // 10초 타임아웃
+        );
         const data = await response.json();
+
+        // 캐시 저장 (loadLeaderboard와 공유)
+        leaderboardCache = data;
+        leaderboardCacheTime = now;
 
         // 리더보드가 비어있거나, 10개 미만이거나, 현재 점수가 10위보다 높으면 폼 표시
         if (!data.scores || data.scores.length < GAME_CONFIG.LEADERBOARD_LIMIT ||
@@ -328,7 +381,7 @@ async function checkHighScore() {
         }
     } catch (error) {
         console.error('하이스코어 체크 실패:', error);
-        // 에러 시에도 폼 표시
+        // 에러 시에도 폼 표시 (사용자가 등록할 기회를 제공)
         highscoreForm.classList.remove('hidden');
     }
 }
@@ -358,7 +411,7 @@ async function submitScore() {
     submitScoreBtn.textContent = '등록 중...';
 
     try {
-        const response = await fetch(GAME_CONFIG.GOOGLE_SHEET_API_URL, {
+        await fetch(GAME_CONFIG.GOOGLE_SHEET_API_URL, {
             method: 'POST',
             mode: 'no-cors', // CORS 우회
             headers: {
@@ -373,6 +426,10 @@ async function submitScore() {
         // no-cors 모드에서는 응답을 읽을 수 없으므로 성공으로 간주
         alert('🎉 점수가 등록되었습니다!');
         highscoreForm.classList.add('hidden');
+
+        // 캐시 무효화
+        leaderboardCache = null;
+        leaderboardCacheTime = 0;
 
         // 리더보드 새로고침 (약간의 지연 후)
         setTimeout(() => {
